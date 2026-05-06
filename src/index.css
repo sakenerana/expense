@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #0f172a;
+  background-color: #eef4f1;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #eef4f1;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.sheet-canvas {
+  background:
+    linear-gradient(#e7efea 1px, transparent 1px),
+    linear-gradient(90deg, #e7efea 1px, transparent 1px);
+  background-color: #f5f9f7;
+  background-size: 28px 28px;
+}
+
+.sheet-page {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(23, 63, 49, 0.07);
+  padding: 20px;
+}
+
+.sheet-card,
+.metric-card {
+  border: 1px solid #d8e4df !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(23, 63, 49, 0.06) !important;
+}
+
+.grid-table .ant-table {
+  border-radius: 6px !important;
+}
+
+.grid-table .ant-table-thead > tr > th {
+  background: #eaf3ef !important;
+  color: #173f31 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  padding: 8px 10px !important;
+}
+
+.grid-table .ant-table-tbody > tr > td {
+  background: #fff;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  padding: 7px 10px !important;
+  vertical-align: middle !important;
+}
+
+.grid-table .ant-table-tbody > tr:hover > td {
+  background: #f6fbf8 !important;
+}
+
+.grid-table .ant-table-cell {
+  white-space: nowrap;
+}
+
+.grid-table .ant-tag {
+  font-size: 12px;
+  line-height: 18px;
+  margin-inline-end: 0;
+  padding-inline: 7px;
+}
+
+.grid-table .ant-btn-sm {
+  height: 22px;
+  padding: 0 4px;
+  width: 22px;
+}
+
+.grid-table .ant-pagination {
+  margin: 12px 0 0 !important;
+}
+
+.grid-table .ant-pagination-item,
+.grid-table .ant-pagination-prev,
+.grid-table .ant-pagination-next {
+  min-width: 28px !important;
+  height: 28px !important;
+  line-height: 26px !important;
+}
+
+.disbursement-table .ant-table-thead > tr > th {
+  background: #eaf3ef !important;
+  border-color: #d8e4df !important;
+  color: #173f31 !important;
+  font-size: 12px !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+.disbursement-header-label {
+  display: inline-block;
+}
+
+.remarks-header {
+  color: #ff0000;
+  font-style: italic;
+}
+
+.disbursement-table .remarks-column {
+  color: #dc2626;
+  font-style: italic;
+}
+
+.disbursement-table .ant-table-thead .remarks-column {
+  color: #ff0000 !important;
+}
+
+.ant-menu-light .ant-menu-item-selected {
+  background-color: #e6f1ed !important;
+  color: #1f6f50 !important;
+}
+
+.ant-menu-light .ant-menu-item-selected .anticon {
+  color: #1f6f50 !important;
+}
+
+.ant-menu-light .ant-menu-item {
+  border-radius: 6px;
+  margin-inline: 10px;
+  width: calc(100% - 20px);
+}
