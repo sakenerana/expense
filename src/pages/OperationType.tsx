@@ -2,6 +2,8 @@ import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined
 import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import EntityViewModal from '../components/EntityViewModal'
 
 type OperationStatus = 'Active' | 'Inactive'
 
@@ -71,6 +73,9 @@ const statusColors: Record<OperationStatus, string> = {
 function OperationType() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<OperationStatus | 'All'>('All')
+  const [selectedOperationType, setSelectedOperationType] = useState<OperationTypeItem | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const navigate = useNavigate()
 
   const filteredData = useMemo(() => {
     return operationTypes.filter((item) => {
@@ -103,13 +108,22 @@ function OperationType() {
       key: 'actions',
       fixed: 'right',
       width: 105,
-      render: () => (
+      render: (_, record) => (
         <Space size={4}>
           <Tooltip title="View">
-            <Button type="text" size="small" icon={<EyeOutlined />} />
+            <Button
+              className='text-blue-700'
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedOperationType(record)
+                setViewOpen(true)
+              }}
+            />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button type="text" size="small" icon={<EditOutlined />} />
+            <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/operation-type/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
           <Popconfirm title="Delete operation type?" okText="Delete" cancelText="Cancel">
             <Tooltip title="Delete">
@@ -132,9 +146,19 @@ function OperationType() {
             Operation Type List
           </Typography.Title>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Add Operation Type
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/operation-type/new')}
+            className="!rounded-md"
+          >
+            Add Operation Type
+          </Button>
+          <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
+            Total Records: {operationTypes.length}
+          </div>
+        </div>
       </div>
 
       <div className="sheet-card p-4">
@@ -170,8 +194,25 @@ function OperationType() {
           scroll={{ x: 900 }}
         />
       </div>
+
+      <EntityViewModal<OperationTypeItem>
+        open={viewOpen}
+        title="Operation Type Details"
+        record={selectedOperationType}
+        onClose={() => setViewOpen(false)}
+        fields={[
+          { key: 'code', label: 'Code' },
+          { key: 'name', label: 'Operation Type' },
+          { key: 'description', label: 'Description' },
+          { key: 'owner', label: 'Owner' },
+          { key: 'status', label: 'Status' },
+          { key: 'updatedAt', label: 'Updated' },
+        ]}
+      />
     </div>
   )
 }
 
 export default OperationType
+
+

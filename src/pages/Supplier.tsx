@@ -2,6 +2,8 @@ import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined
 import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import EntityViewModal from '../components/EntityViewModal'
 
 type SupplierStatus = 'Active' | 'Pending' | 'Inactive'
 
@@ -88,6 +90,9 @@ const statusColors: Record<SupplierStatus, string> = {
 function Supplier() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<SupplierStatus | 'All'>('All')
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierItem | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const navigate = useNavigate()
 
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter((supplier) => {
@@ -127,13 +132,22 @@ function Supplier() {
       key: 'actions',
       fixed: 'right',
       width: 105,
-      render: () => (
+      render: (_, record) => (
         <Space size={4}>
           <Tooltip title="View">
-            <Button type="text" size="small" icon={<EyeOutlined />} />
+            <Button
+              className='text-blue-700'
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedSupplier(record)
+                setViewOpen(true)
+              }}
+            />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button type="text" size="small" icon={<EditOutlined />} />
+            <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/supplier/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
           <Popconfirm title="Delete supplier?" okText="Delete" cancelText="Cancel">
             <Tooltip title="Delete">
@@ -156,9 +170,19 @@ function Supplier() {
             Supplier List
           </Typography.Title>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Add Supplier
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/supplier/new')}
+            className="!rounded-md"
+          >
+            Add Supplier
+          </Button>
+          <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
+            Total Records: {suppliers.length}
+          </div>
+        </div>
       </div>
 
       <div className="sheet-card p-4">
@@ -195,8 +219,26 @@ function Supplier() {
           scroll={{ x: 980 }}
         />
       </div>
+
+      <EntityViewModal<SupplierItem>
+        open={viewOpen}
+        title="Supplier Details"
+        record={selectedSupplier}
+        onClose={() => setViewOpen(false)}
+        fields={[
+          { key: 'supplierCode', label: 'Code' },
+          { key: 'supplierName', label: 'Supplier Name' },
+          { key: 'contactPerson', label: 'Contact Person' },
+          { key: 'category', label: 'Category' },
+          { key: 'email', label: 'Email' },
+          { key: 'phone', label: 'Phone' },
+          { key: 'status', label: 'Status' },
+        ]}
+      />
     </div>
   )
 }
 
 export default Supplier
+
+

@@ -1,7 +1,9 @@
-import { SearchOutlined } from '@ant-design/icons'
-import { Input, Select, Space, Table, Tag, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import EntityViewModal from '../components/EntityViewModal'
 
 type RequestStatus = 'Processed' | 'Pending' | 'Paid' | 'For Liquidation'
 
@@ -169,6 +171,9 @@ const header = (label: string, className = '') => (
 function Disbursement() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<RequestStatus | 'All'>('All')
+  const [selectedDisbursement, setSelectedDisbursement] = useState<DisbursementItem | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const navigate = useNavigate()
 
   const filteredData = useMemo(() => {
     return disbursements.filter((item) => {
@@ -254,6 +259,36 @@ function Disbursement() {
       width: 180,
       className: 'remarks-column',
     },
+    {
+      title: header('Actions'),
+      key: 'actions',
+      fixed: 'right',
+      width: 110,
+      render: (_, record) => (
+        <Space size={4}>
+          <Tooltip title="View">
+            <Button
+              className='text-blue-700'
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedDisbursement(record)
+                setViewOpen(true)
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="Edit">
+            <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/disbursement/edit/${record.key}`, { state: { record } })} />
+          </Tooltip>
+          <Popconfirm title="Delete disbursement?" okText="Delete" cancelText="Cancel">
+            <Tooltip title="Delete">
+              <Button danger type="text" size="small" icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ]
 
   return (
@@ -266,6 +301,19 @@ function Disbursement() {
           <Typography.Title level={3} className="!m-0 !mt-1 !text-[#173f31]">
             Disbursement Register
           </Typography.Title>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/disbursement/new')}
+            className="!rounded-md"
+          >
+            Add Disbursement
+          </Button>
+          <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
+            Total Records: {disbursements.length}
+          </div>
         </div>
       </div>
 
@@ -304,8 +352,29 @@ function Disbursement() {
           scroll={{ x: 3700 }}
         />
       </div>
+
+      <EntityViewModal<DisbursementItem>
+        open={viewOpen}
+        title="Disbursement Details"
+        record={selectedDisbursement}
+        onClose={() => setViewOpen(false)}
+        fields={[
+          { key: 'requestTitle', label: 'Request Title' },
+          { key: 'requestDate', label: 'Request Date' },
+          { key: 'operationType', label: 'Operation Type' },
+          { key: 'supplier', label: 'Supplier' },
+          { key: 'typeOfExpense', label: 'Type of Expense' },
+          { key: 'amountRequested', label: 'Amount Requested', render: (value) => typeof value === 'number' ? money(value) : String(value) },
+          { key: 'vatAmount', label: 'VAT Amount', render: (value) => typeof value === 'number' ? money(value) : String(value) },
+          { key: 'netAmount', label: 'Net Amount', render: (value) => typeof value === 'number' ? money(value) : String(value) },
+          { key: 'requestStatus', label: 'Request Status' },
+          { key: 'remarks', label: 'Remarks' },
+        ]}
+      />
     </div>
   )
 }
 
 export default Disbursement
+
+

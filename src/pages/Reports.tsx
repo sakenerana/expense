@@ -70,7 +70,7 @@ function Reports() {
           </Typography.Title>
         </div>
         <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
-          Sheet 02
+          Total Records: {allReports.length}
         </div>
       </div>
 
@@ -112,3 +112,4 @@ function Reports() {
 }
 
 export default Reports
+

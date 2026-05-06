@@ -2,6 +2,8 @@ import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined
 import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import EntityViewModal from '../components/EntityViewModal'
 
 type ExpenseStatus = 'Active' | 'Inactive'
 
@@ -80,6 +82,9 @@ const statusColors: Record<ExpenseStatus, string> = {
 function ExpenseType() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<ExpenseStatus | 'All'>('All')
+  const [selectedExpenseType, setSelectedExpenseType] = useState<ExpenseTypeItem | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
+  const navigate = useNavigate()
 
   const filteredData = useMemo(() => {
     return expenseTypes.filter((item) => {
@@ -120,13 +125,22 @@ function ExpenseType() {
       key: 'actions',
       fixed: 'right',
       width: 105,
-      render: () => (
+      render: (_, record) => (
         <Space size={4}>
           <Tooltip title="View">
-            <Button type="text" size="small" icon={<EyeOutlined />} />
+            <Button
+              className='text-blue-700'
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setSelectedExpenseType(record)
+                setViewOpen(true)
+              }}
+            />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button type="text" size="small" icon={<EditOutlined />} />
+            <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/expense-type/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
           <Popconfirm title="Delete expense type?" okText="Delete" cancelText="Cancel">
             <Tooltip title="Delete">
@@ -149,9 +163,19 @@ function ExpenseType() {
             Expense Type List
           </Typography.Title>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}>
-          Add Expense Type
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/expense-type/new')}
+            className="!rounded-md"
+          >
+            Add Expense Type
+          </Button>
+          <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
+            Total Records: {expenseTypes.length}
+          </div>
+        </div>
       </div>
 
       <div className="sheet-card p-4">
@@ -187,8 +211,24 @@ function ExpenseType() {
           scroll={{ x: 850 }}
         />
       </div>
+
+      <EntityViewModal<ExpenseTypeItem>
+        open={viewOpen}
+        title="Expense Type Details"
+        record={selectedExpenseType}
+        onClose={() => setViewOpen(false)}
+        fields={[
+          { key: 'code', label: 'Code' },
+          { key: 'name', label: 'Expense Type' },
+          { key: 'category', label: 'Category' },
+          { key: 'glAccount', label: 'GL Account' },
+          { key: 'taxable', label: 'Taxable' },
+          { key: 'status', label: 'Status' },
+        ]}
+      />
     </div>
   )
 }
 
 export default ExpenseType
+

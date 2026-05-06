@@ -41,7 +41,7 @@ function Dashboard() {
           </Typography.Title>
         </div>
         <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
-          Sheet 01
+          Total Records: {activityData.length}
         </div>
       </div>
 
@@ -107,3 +107,4 @@ function Dashboard() {
 }
 
 export default Dashboard
+
