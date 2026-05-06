@@ -12,10 +12,14 @@ function ForgotPassword() {
           Enter your email and we will send reset instructions.
         </Typography.Paragraph>
 
-        <Form layout="vertical">
+        <Form layout="vertical" className="checkout-form">
+          <div className="form-section-head">
+            <Typography.Text className="form-section-title">Recovery</Typography.Text>
+          </div>
           <Form.Item
             label="Email"
             name="email"
+            extra={<span className="form-help-text">We will send the reset link to this email.</span>}
             rules={[{ required: true, message: 'Please enter your email' }]}
           >
             <Input placeholder="name@company.com" />

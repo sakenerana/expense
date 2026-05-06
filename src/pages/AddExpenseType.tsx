@@ -29,7 +29,7 @@ function AddExpenseType() {
           <Typography.Title level={5} className="!mb-1">
             Expense Type Information
           </Typography.Title>
-          <Typography.Paragraph className="!mb-4 !text-[#5f736b]">
+          <Typography.Paragraph className="!mb-5 !text-[#5f736b]">
             {isEditMode
               ? 'Update expense type details below.'
               : 'Enter the details below to create a new expense type.'}
@@ -41,8 +41,11 @@ function AddExpenseType() {
             requiredMark={true}
             initialValues={initialValues}
           >
+            <div className="form-section-head">
+              <Typography.Text className="form-section-title">Expense Definition</Typography.Text>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Form.Item label="Code" name="code" rules={[{ required: true, message: 'Please enter code' }]}>
+              <Form.Item label="Code" name="code" extra={<span className="form-help-text">Format: EXP-###</span>} rules={[{ required: true, message: 'Please enter code' }]}>
                 <Input placeholder="e.g. EXP-007" />
               </Form.Item>
               <Form.Item label="Expense Type" name="name" rules={[{ required: true, message: 'Please enter expense type name' }]}>
@@ -79,7 +82,7 @@ function AddExpenseType() {
               </Form.Item>
             </div>
 
-            <div className="mt-3 border-t border-[#d8e4df] pt-3">
+            <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
                   {isEditMode ? 'Update Changes' : 'Save Expense Type'}

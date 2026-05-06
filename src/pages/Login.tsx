@@ -56,10 +56,14 @@ function Login() {
           Sign in to manage and track your company expenses efficiently.
         </Typography.Paragraph>
 
-        <Form layout="vertical">
+        <Form layout="vertical" className="checkout-form">
+          <div className="form-section-head">
+            <Typography.Text className="form-section-title">Account Access</Typography.Text>
+          </div>
           <Form.Item
             label="Email"
             name="email"
+            extra={<span className="form-help-text">Use your registered work email.</span>}
             rules={[{ required: true, message: "Please enter your email" }]}
           >
             <Input placeholder="name@company.com" className="rounded-md" />
@@ -68,6 +72,7 @@ function Login() {
           <Form.Item
             label="Password"
             name="password"
+            extra={<span className="form-help-text">Keep your credentials secure.</span>}
             rules={[{ required: true, message: "Please enter your password" }]}
           >
             <Input.Password placeholder="Enter password" className="rounded-md" />

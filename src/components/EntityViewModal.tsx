@@ -44,7 +44,7 @@ function EntityViewModal<T extends Record<string, unknown>>({
   return (
     <Modal
       open={open}
-      title={<span className="text-[18px] font-semibold text-[#1f2937]">{title}</span>}
+      title={<span className="text-[16px] font-semibold text-[#1f2937]">{title}</span>}
       onCancel={onClose}
       onOk={onClose}
       okText="Close"
@@ -53,29 +53,35 @@ function EntityViewModal<T extends Record<string, unknown>>({
       className="entity-view-modal"
     >
       {record ? (
-        <Descriptions bordered size="middle" column={1} className="entity-view-descriptions">
-          {fields.map((field) => {
-            const value = record[field.key]
-            const content = field.render
-              ? field.render(value, record)
-              : value === null || value === undefined || value === ''
-                ? '-'
-                : String(value)
-            return (
-              <Descriptions.Item
-                key={String(field.key)}
-                label={
-                  <span className="inline-flex items-center gap-2">
-                    <span className="text-[13px] opacity-80">{iconForLabel(field.label)}</span>
-                    <span>{field.label}</span>
-                  </span>
-                }
-              >
-                {content}
-              </Descriptions.Item>
-            )
-          })}
-        </Descriptions>
+        <>
+          <div className="entity-view-sheet-head">
+            <span>Field</span>
+            <span>Value</span>
+          </div>
+          <Descriptions bordered size="middle" column={1} className="entity-view-descriptions">
+            {fields.map((field) => {
+              const value = record[field.key]
+              const content = field.render
+                ? field.render(value, record)
+                : value === null || value === undefined || value === ''
+                  ? '-'
+                  : String(value)
+              return (
+                <Descriptions.Item
+                  key={String(field.key)}
+                  label={
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-[13px] opacity-80">{iconForLabel(field.label)}</span>
+                      <span>{field.label}</span>
+                    </span>
+                  }
+                >
+                  {content}
+                </Descriptions.Item>
+              )
+            })}
+          </Descriptions>
+        </>
       ) : null}
     </Modal>
   )

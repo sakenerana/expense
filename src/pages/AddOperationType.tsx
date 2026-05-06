@@ -29,7 +29,7 @@ function AddOperationType() {
           <Typography.Title level={5} className="!mb-1">
             Operation Type Information
           </Typography.Title>
-          <Typography.Paragraph className="!mb-4 !text-[#5f736b]">
+          <Typography.Paragraph className="!mb-5 !text-[#5f736b]">
             {isEditMode
               ? 'Update operation type details below.'
               : 'Enter the details below to create a new operation type.'}
@@ -41,8 +41,11 @@ function AddOperationType() {
             requiredMark={true}
             initialValues={initialValues}
           >
+            <div className="form-section-head">
+              <Typography.Text className="form-section-title">Operation Setup</Typography.Text>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Form.Item label="Code" name="code" rules={[{ required: true, message: 'Please enter code' }]}>
+              <Form.Item label="Code" name="code" extra={<span className="form-help-text">Format: OPS-###</span>} rules={[{ required: true, message: 'Please enter code' }]}>
                 <Input placeholder="e.g. OPS-006" />
               </Form.Item>
               <Form.Item label="Operation Type" name="name" rules={[{ required: true, message: 'Please enter operation type name' }]}>
@@ -52,6 +55,7 @@ function AddOperationType() {
                 label="Description"
                 name="description"
                 className="md:col-span-2"
+                extra={<span className="form-help-text">Briefly describe what this operation is used for.</span>}
                 rules={[{ required: true, message: 'Please enter description' }]}
               >
                 <Input.TextArea placeholder="Enter description" rows={3} />
@@ -75,7 +79,7 @@ function AddOperationType() {
               </Form.Item>
             </div>
 
-            <div className="mt-3 border-t border-[#d8e4df] pt-3">
+            <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
                   {isEditMode ? 'Update Changes' : 'Save Operation Type'}

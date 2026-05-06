@@ -30,7 +30,7 @@ function AddUser() {
           <Typography.Title level={5} className="!mb-1 !text-[#1f2937]">
             User Information
           </Typography.Title>
-          <Typography.Paragraph className="!mb-4 !text-[#7b8794]">
+          <Typography.Paragraph className="!mb-5 !text-[#7b8794]">
             {isEditMode
               ? 'Update the account details below.'
               : 'Enter the account details below to create a new user.'}
@@ -47,13 +47,22 @@ function AddUser() {
               // Handle form submission here
             }}
           >
+            <div className="form-section-head">
+              <Typography.Text className="form-section-title">Profile Details</Typography.Text>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Form.Item label="Full Name" name="name" rules={[{ required: true, message: 'Please enter full name' }]}>
+              <Form.Item
+                label="Full Name"
+                name="name"
+                extra={<span className="form-help-text">Use legal full name as displayed in records.</span>}
+                rules={[{ required: true, message: 'Please enter full name' }]}
+              >
                 <Input placeholder="Enter full name" />
               </Form.Item>
               <Form.Item
                 label="Email"
                 name="email"
+                extra={<span className="form-help-text">Use company email for account access.</span>}
                 rules={[
                   { required: true, message: 'Please enter email' },
                   { type: 'email', message: 'Please enter a valid email' },
@@ -80,23 +89,28 @@ function AddUser() {
                   ]}
                 />
               </Form.Item>
-              
-              {/* Password Field */}
+            </div>
+
+            <div className="form-section-head !mt-3">
+              <Typography.Text className="form-section-title">Security</Typography.Text>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               <Form.Item
                 label="Password"
                 name="password"
+                extra={<span className="form-help-text">{isEditMode ? 'Leave blank to keep current password.' : 'Minimum of 8 characters.'}</span>}
                 rules={[
                   { required: !isEditMode, message: 'Please enter password' },
                   { min: 8, message: 'Password must be at least 8 characters' },
                 ]}
               >
-                <Input.Password placeholder={isEditMode ? "Leave blank to keep current password" : "Create a password"} />
+                <Input.Password placeholder={isEditMode ? 'Leave blank to keep current password' : 'Create a password'} />
               </Form.Item>
 
-              {/* Confirm Password Field */}
               <Form.Item
                 label="Confirm Password"
                 name="confirmPassword"
+                extra={<span className="form-help-text">Re-enter password to confirm.</span>}
                 dependencies={['password']}
                 rules={[
                   { required: !isEditMode, message: 'Please confirm your password' },
@@ -114,7 +128,7 @@ function AddUser() {
               </Form.Item>
             </div>
 
-            <div className="mt-3 border-t border-[#d8e4df] pt-3">
+            <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
                   {isEditMode ? 'Update Changes' : 'Save User'}

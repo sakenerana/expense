@@ -29,7 +29,7 @@ function AddSupplier() {
           <Typography.Title level={5} className="!mb-1">
             Supplier Information
           </Typography.Title>
-          <Typography.Paragraph className="!mb-4 !text-[#5f736b]">
+          <Typography.Paragraph className="!mb-5 !text-[#5f736b]">
             {isEditMode
               ? 'Update supplier details below.'
               : 'Enter the details below to add a new supplier record.'}
@@ -41,8 +41,11 @@ function AddSupplier() {
             requiredMark={true}
             initialValues={initialValues}
           >
+            <div className="form-section-head">
+              <Typography.Text className="form-section-title">Supplier Profile</Typography.Text>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Form.Item label="Supplier Code" name="supplierCode" rules={[{ required: true, message: 'Please enter supplier code' }]}>
+              <Form.Item label="Supplier Code" name="supplierCode" extra={<span className="form-help-text">Format: SUP-###</span>} rules={[{ required: true, message: 'Please enter supplier code' }]}>
                 <Input placeholder="e.g. SUP-007" />
               </Form.Item>
               <Form.Item label="Supplier Name" name="supplierName" rules={[{ required: true, message: 'Please enter supplier name' }]}>
@@ -67,6 +70,7 @@ function AddSupplier() {
               <Form.Item
                 label="Email"
                 name="email"
+                extra={<span className="form-help-text">Primary supplier contact email.</span>}
                 rules={[
                   { required: true, message: 'Please enter email' },
                   { type: 'email', message: 'Please enter a valid email' },
@@ -94,7 +98,7 @@ function AddSupplier() {
               </Form.Item>
             </div>
 
-            <div className="mt-3 border-t border-[#d8e4df] pt-3">
+            <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
                   {isEditMode ? 'Update Changes' : 'Save Supplier'}

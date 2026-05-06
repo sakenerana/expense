@@ -107,6 +107,11 @@ function Sidebar({ collapsed = false, orientation = 'vertical' }: SidebarProps) 
         </div>
       </div>
       )}
+      {!isHorizontal && !collapsed && (
+        <p className={`px-4 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] ${mode === 'dark' ? 'text-[#7f9ab0]' : 'text-[#6e8178]'}`}>
+          Workbook Navigation
+        </p>
+      )}
       <Menu
         mode={isHorizontal ? 'horizontal' : 'inline'}
         theme={mode === 'dark' ? 'dark' : 'light'}
@@ -114,7 +119,7 @@ function Sidebar({ collapsed = false, orientation = 'vertical' }: SidebarProps) 
         items={items}
         onClick={({ key }) => navigate(key)}
         inlineCollapsed={!isHorizontal ? collapsed : undefined}
-        className={isHorizontal ? 'top-nav-menu' : undefined}
+        className={isHorizontal ? 'top-nav-menu' : 'sidebar-menu'}
       />
     </div>
   )

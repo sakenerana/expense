@@ -29,7 +29,7 @@ function AddDisbursement() {
           <Typography.Title level={5} className="!mb-1">
             Disbursement Information
           </Typography.Title>
-          <Typography.Paragraph className="!mb-4 !text-[#5f736b]">
+          <Typography.Paragraph className="!mb-5 !text-[#5f736b]">
             {isEditMode
               ? 'Update disbursement details below.'
               : 'Enter disbursement details below to create a new record.'}
@@ -41,8 +41,11 @@ function AddDisbursement() {
             requiredMark={true}
             initialValues={initialValues}
           >
+            <div className="form-section-head">
+              <Typography.Text className="form-section-title">Request Details</Typography.Text>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Form.Item label="Request Date" name="requestDate" rules={[{ required: true, message: 'Please select request date' }]}>
+              <Form.Item label="Request Date" name="requestDate" extra={<span className="form-help-text">Date when the disbursement was requested.</span>} rules={[{ required: true, message: 'Please select request date' }]}>
                 <DatePicker className="w-full" />
               </Form.Item>
               <Form.Item label="Operation Type" name="operationType" rules={[{ required: true, message: 'Please select operation type' }]}>
@@ -80,7 +83,7 @@ function AddDisbursement() {
               </Form.Item>
             </div>
 
-            <div className="mt-3 border-t border-[#d8e4df] pt-3">
+            <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
                 <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
                   {isEditMode ? 'Update Changes' : 'Save Disbursement'}
