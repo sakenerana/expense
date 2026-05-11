@@ -1,78 +1,15 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EditOutlined, EyeOutlined, FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Select, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EntityViewModal from '../components/EntityViewModal'
-
-type ExpenseStatus = 'Active' | 'Inactive'
-
-type ExpenseTypeItem = {
-  key: string
-  code: string
-  name: string
-  category: string
-  glAccount: string
-  taxable: 'Yes' | 'No'
-  status: ExpenseStatus
-}
-
-const expenseTypes: ExpenseTypeItem[] = [
-  {
-    key: '1',
-    code: 'EXP-001',
-    name: 'Travel',
-    category: 'Employee Expense',
-    glAccount: '6100-Travel',
-    taxable: 'No',
-    status: 'Active',
-  },
-  {
-    key: '2',
-    code: 'EXP-002',
-    name: 'Meals',
-    category: 'Employee Expense',
-    glAccount: '6120-Meals',
-    taxable: 'No',
-    status: 'Active',
-  },
-  {
-    key: '3',
-    code: 'EXP-003',
-    name: 'Office Supplies',
-    category: 'Operating Expense',
-    glAccount: '6200-Supplies',
-    taxable: 'Yes',
-    status: 'Active',
-  },
-  {
-    key: '4',
-    code: 'EXP-004',
-    name: 'Software Subscription',
-    category: 'Technology',
-    glAccount: '6400-Software',
-    taxable: 'Yes',
-    status: 'Active',
-  },
-  {
-    key: '5',
-    code: 'EXP-005',
-    name: 'Training',
-    category: 'People Operations',
-    glAccount: '6300-Training',
-    taxable: 'No',
-    status: 'Inactive',
-  },
-  {
-    key: '6',
-    code: 'EXP-006',
-    name: 'Utilities',
-    category: 'Facilities',
-    glAccount: '6500-Utilities',
-    taxable: 'Yes',
-    status: 'Active',
-  },
-]
+import { exportTableToPdf } from '../services/pdfExportService'
+import {
+  fetchExpenseTypes,
+  type ExpenseStatus,
+  type ExpenseTypeItem,
+} from '../services/expenseTypesService'
 
 const statusColors: Record<ExpenseStatus, string> = {
   Active: 'green',
@@ -80,15 +17,34 @@ const statusColors: Record<ExpenseStatus, string> = {
 }
 
 function ExpenseType() {
+  const [expenseTypes, setExpenseTypes] = useState<ExpenseTypeItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<ExpenseStatus | 'All'>('All')
   const [selectedExpenseType, setSelectedExpenseType] = useState<ExpenseTypeItem | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const loadExpenseTypes = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchExpenseTypes()
+        setExpenseTypes(data)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load expense types.'
+        message.error(errorMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadExpenseTypes()
+  }, [])
+
   const filteredData = useMemo(() => {
     return expenseTypes.filter((item) => {
-      const searchableText = [item.code, item.name, item.category, item.glAccount]
+      const searchableText = [item.code, item.name, item.glAccount]
         .join(' ')
         .toLowerCase()
 
@@ -97,22 +53,12 @@ function ExpenseType() {
 
       return matchesSearch && matchesStatus
     })
-  }, [search, status])
+  }, [expenseTypes, search, status])
 
   const columns: ColumnsType<ExpenseTypeItem> = [
     { title: 'Code', dataIndex: 'code', key: 'code', width: 105 },
     { title: 'Expense Type', dataIndex: 'name', key: 'name', ellipsis: true, width: 175 },
-    { title: 'Category', dataIndex: 'category', key: 'category', ellipsis: true, width: 165 },
     { title: 'GL Account', dataIndex: 'glAccount', key: 'glAccount', ellipsis: true, width: 155 },
-    {
-      title: 'Taxable',
-      dataIndex: 'taxable',
-      key: 'taxable',
-      width: 90,
-      render: (value: ExpenseTypeItem['taxable']) => (
-        <Tag color={value === 'Yes' ? 'blue' : 'default'}>{value}</Tag>
-      ),
-    },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -142,15 +88,24 @@ function ExpenseType() {
           <Tooltip title="Edit">
             <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/expense-type/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
-          <Popconfirm title="Delete expense type?" okText="Delete" cancelText="Cancel">
-            <Tooltip title="Delete">
-              <Button danger type="text" size="small" icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
         </Space>
       ),
     },
   ]
+
+  const handleExportPdf = () => {
+    exportTableToPdf({
+      filename: 'expense-type-report.pdf',
+      title: 'Expense Type Report',
+      columns: [
+        { key: 'code', title: 'Code' },
+        { key: 'name', title: 'Expense Type' },
+        { key: 'glAccount', title: 'GL Account' },
+        { key: 'status', title: 'Status' },
+      ],
+      rows: filteredData,
+    })
+  }
 
   return (
     <div className="sheet-page space-y-5">
@@ -164,6 +119,9 @@ function ExpenseType() {
           </Typography.Title>
         </div>
         <div className="flex items-center gap-3">
+          <Button danger icon={<FilePdfOutlined />} onClick={handleExportPdf} className="!rounded-md">
+            Export PDF
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -204,6 +162,7 @@ function ExpenseType() {
           className="grid-table"
           columns={columns}
           dataSource={filteredData}
+          loading={loading}
           pagination={{ pageSize: 8, showSizeChanger: false }}
           rowKey="key"
           bordered
@@ -220,10 +179,12 @@ function ExpenseType() {
         fields={[
           { key: 'code', label: 'Code' },
           { key: 'name', label: 'Expense Type' },
-          { key: 'category', label: 'Category' },
           { key: 'glAccount', label: 'GL Account' },
-          { key: 'taxable', label: 'Taxable' },
-          { key: 'status', label: 'Status' },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => <Tag color={value === 'Active' ? 'green' : 'default'}>{String(value)}</Tag>,
+          },
         ]}
       />
     </div>
@@ -231,4 +192,3 @@ function ExpenseType() {
 }
 
 export default ExpenseType
-

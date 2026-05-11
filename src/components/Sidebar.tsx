@@ -9,8 +9,10 @@ import {
 } from '@ant-design/icons'
 import { Menu } from 'antd'
 import type { MenuProps } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
+import { supabase, supabaseSession } from '../lib/supabase'
 
 type SidebarProps = {
   collapsed?: boolean
@@ -59,8 +61,63 @@ function Sidebar({ collapsed = false, orientation = 'vertical' }: SidebarProps) 
   const navigate = useNavigate()
   const location = useLocation()
   const { mode } = useTheme()
+  const [userRole, setUserRole] = useState<string>('User')
+  const [isRoleResolved, setIsRoleResolved] = useState(false)
 
   const isHorizontal = orientation === 'horizontal'
+
+  useEffect(() => {
+    const loadUserRole = async () => {
+      const [{ data: localUserData }, { data: sessionUserData }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabaseSession.auth.getUser(),
+      ])
+
+      const userId = localUserData.user?.id ?? sessionUserData.user?.id
+      if (!userId) {
+        setUserRole('User')
+        setIsRoleResolved(true)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('user_uuid', userId)
+          .maybeSingle()
+
+        if (error || !data?.role) {
+          setUserRole('User')
+          return
+        }
+
+        setUserRole(String(data.role))
+      } finally {
+        setIsRoleResolved(true)
+      }
+    }
+
+    void loadUserRole()
+  }, [])
+
+  const visibleItems = useMemo(() => {
+    if (!isRoleResolved) {
+      return items?.filter((item) => ['/dashboard', '/disbursement', '/reports'].includes(String(item?.key)))
+    }
+
+    if (['user', 'viewer'].includes(userRole.toLowerCase())) {
+      return items?.filter((item) => ['/dashboard', '/disbursement', '/reports'].includes(String(item?.key)))
+    }
+
+    return items
+  }, [isRoleResolved, userRole])
+
+  const selectedMenuKey =
+    visibleItems
+      ?.map((item) => String(item?.key))
+      .sort((a, b) => b.length - a.length)
+      .find((key) => location.pathname === key || location.pathname.startsWith(`${key}/`)) ?? '/dashboard'
 
   return (
     <div
@@ -115,8 +172,8 @@ function Sidebar({ collapsed = false, orientation = 'vertical' }: SidebarProps) 
       <Menu
         mode={isHorizontal ? 'horizontal' : 'inline'}
         theme={mode === 'dark' ? 'dark' : 'light'}
-        selectedKeys={[location.pathname]}
-        items={items}
+        selectedKeys={[selectedMenuKey]}
+        items={visibleItems}
         onClick={({ key }) => navigate(key)}
         inlineCollapsed={!isHorizontal ? collapsed : undefined}
         className={isHorizontal ? 'top-nav-menu' : 'sidebar-menu'}

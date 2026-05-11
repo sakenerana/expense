@@ -1,9 +1,10 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EntityViewModal from '../components/EntityViewModal'
+import { supabase, supabaseSession } from '../lib/supabase'
 
 type RequestStatus = 'Processed' | 'Pending' | 'Paid' | 'For Liquidation'
 
@@ -173,7 +174,33 @@ function Disbursement() {
   const [status, setStatus] = useState<RequestStatus | 'All'>('All')
   const [selectedDisbursement, setSelectedDisbursement] = useState<DisbursementItem | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string>('User')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const loadRole = async () => {
+      const [{ data: localUserData }, { data: sessionUserData }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabaseSession.auth.getUser(),
+      ])
+
+      const userId = localUserData.user?.id ?? sessionUserData.user?.id
+      if (!userId) {
+        setUserRole('User')
+        return
+      }
+
+      const { data } = await supabase
+        .from('users')
+        .select('role')
+        .eq('user_uuid', userId)
+        .maybeSingle()
+
+      setUserRole(data?.role ? String(data.role) : 'User')
+    }
+
+    void loadRole()
+  }, [])
 
   const filteredData = useMemo(() => {
     return disbursements.filter((item) => {
@@ -291,6 +318,14 @@ function Disbursement() {
     },
   ]
 
+  const visibleColumns = useMemo(() => {
+    if (userRole.toLowerCase() !== 'viewer') {
+      return columns
+    }
+
+    return columns.filter((column) => String(column.key) !== 'actions')
+  }, [columns, userRole])
+
   return (
     <div className="sheet-page space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d8e4df] pb-4">
@@ -303,14 +338,16 @@ function Disbursement() {
           </Typography.Title>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/disbursement/new')}
-            className="!rounded-md"
-          >
-            Add Disbursement
-          </Button>
+          {userRole.toLowerCase() !== 'viewer' && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/disbursement/new')}
+              className="!rounded-md"
+            >
+              Add Disbursement
+            </Button>
+          )}
           <div className="rounded border border-[#d8e4df] bg-[#f6faf8] px-3 py-2 text-sm text-[#51645c]">
             Total Records: {disbursements.length}
           </div>
@@ -343,7 +380,7 @@ function Disbursement() {
 
         <Table<DisbursementItem>
           className="grid-table disbursement-table"
-          columns={columns}
+          columns={visibleColumns}
           dataSource={filteredData}
           pagination={{ pageSize: 10, showSizeChanger: false }}
           rowKey="key"

@@ -1,54 +1,115 @@
-import { Button, Card, Checkbox, Form, Input, Typography } from "antd"
-import { Link } from "react-router-dom"
-import Particles from "react-tsparticles"
-import { loadFull } from "tsparticles"
+import { Button, Card, Checkbox, Form, Input, Typography, message } from "antd"
+import { Link, useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import Particles, { initParticlesEngine } from "@tsparticles/react"
+import { loadSlim } from "@tsparticles/slim"
+import { getSupabaseClient, supabase, supabaseSession } from "../lib/supabase"
+
+type LoginFormValues = {
+  email: string
+  password: string
+  remember?: boolean
+}
 
 function Login() {
-  const particlesInit = async (main: any) => {
-    await loadFull(main)
+  const navigate = useNavigate()
+  const [submitting, setSubmitting] = useState(false)
+  const [particlesReady, setParticlesReady] = useState(false)
+
+  useEffect(() => {
+    void initParticlesEngine(async (engine) => {
+      await loadSlim(engine)
+    }).then(() => {
+      setParticlesReady(true)
+    })
+  }, [])
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const [{ data: localData }, { data: sessionData }] = await Promise.all([
+        supabase.auth.getSession(),
+        supabaseSession.auth.getSession()
+      ])
+
+      if (localData.session || sessionData.session) {
+        navigate("/dashboard", { replace: true })
+      }
+    }
+
+    void checkSession()
+  }, [navigate])
+
+  const handleLogin = async (values: LoginFormValues) => {
+    setSubmitting(true)
+
+    const authClient = getSupabaseClient(Boolean(values.remember))
+
+    const { error } = await authClient.auth.signInWithPassword({
+      email: values.email,
+      password: values.password
+    })
+
+    setSubmitting(false)
+
+    if (error) {
+      message.error(error.message || "Unable to sign in.")
+      return
+    }
+
+    message.success("Login successful.")
+    navigate("/dashboard", { replace: true })
   }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-animated p-6 overflow-hidden">
-      {/* Particle Background */}
-      <Particles
-        id="tsparticles"
-        init={particlesInit}
-        options={{
-          particles: {
-            number: { value: 40 },
-            move: { enable: true, speed: 1.5, outModes: "out" },
-            opacity: { value: 0.6 },
-            size: { value: 16 },
-            color: { value: "#1f6f50" },
-            shape: {
-              type: ["char", "image"],
-              character: {
-                value: ["$", "€", "¥", "₱"],
-                font: "Verdana",
-                weight: "400"
-              },
-              image: [
-                { src: "/icons/bar-chart.svg", width: 20, height: 20 },
-                { src: "/icons/pie-chart.svg", width: 20, height: 20 },
-                { src: "/icons/up-arrow.svg", width: 20, height: 20 }
-              ]
-            }
-          },
-          interactivity: {
-            events: {
-              onHover: { enable: true, mode: "repulse" },
-              onClick: { enable: true, mode: "push" }
+      {particlesReady && (
+        <Particles
+          id="tsparticles"
+          options={{
+            background: {
+              color: { value: "transparent" }
             },
-            modes: { repulse: { distance: 120 }, push: { quantity: 2 } }
-          },
-          fullScreen: { enable: false }
-        }}
-        className="absolute inset-0 -z-10"
-      />
+            detectRetina: true,
+            fpsLimit: 60,
+            particles: {
+              number: { value: 55 },
+              color: { value: "#0f4f39" },
+              links: {
+                color: "#0f4f39",
+                distance: 140,
+                enable: true,
+                opacity: 0.35,
+                width: 1
+              },
+              move: {
+                enable: true,
+                speed: 1.1,
+                outModes: { default: "out" }
+              },
+              opacity: { value: 0.55 },
+              size: { value: { min: 2, max: 5 } },
+              shape: { type: "circle" }
+            },
+            interactivity: {
+              events: {
+                onHover: { enable: true, mode: "grab" },
+                onClick: { enable: true, mode: "push" }
+              },
+              modes: {
+                grab: {
+                  distance: 160,
+                  links: { opacity: 0.55 }
+                },
+                push: { quantity: 3 }
+              }
+            },
+            fullScreen: { enable: false }
+          }}
+          className="absolute inset-0 z-0"
+        />
+      )}
 
-      {/* Login Card */}
-      <Card className="w-full max-w-md rounded-xl border border-[#d8e4df] shadow-2xl backdrop-blur-md bg-white/80">
+      <Card className="relative z-10 w-full max-w-md rounded-xl border border-[#d8e4df] shadow-2xl backdrop-blur-md bg-white/80">
         <Typography.Title level={2} className="!mb-2 !text-[#173f31] font-bold text-center">
           Expense Management
         </Typography.Title>
@@ -56,7 +117,7 @@ function Login() {
           Sign in to manage and track your company expenses efficiently.
         </Typography.Paragraph>
 
-        <Form layout="vertical" className="checkout-form">
+        <Form layout="vertical" className="checkout-form" onFinish={handleLogin}>
           <div className="form-section-head">
             <Typography.Text className="form-section-title">Account Access</Typography.Text>
           </div>
@@ -79,7 +140,9 @@ function Login() {
           </Form.Item>
 
           <div className="mb-4 flex items-center justify-between">
-            <Checkbox>Remember me</Checkbox>
+            <Form.Item name="remember" valuePropName="checked" noStyle initialValue={true}>
+              <Checkbox>Remember me</Checkbox>
+            </Form.Item>
             <Link to="/forgot-password" className="text-[#1f6f50] hover:underline">
               Forgot password?
             </Link>
@@ -89,6 +152,7 @@ function Login() {
             type="primary"
             htmlType="submit"
             block
+            loading={submitting}
             className="!bg-[#1f6f50] hover:!bg-[#18563e] rounded-md font-semibold"
           >
             Login

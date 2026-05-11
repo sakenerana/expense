@@ -1,12 +1,50 @@
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
-import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography } from 'antd'
+import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  fetchExpenseTypeOptions,
+  fetchOperationTypeOptions,
+  fetchSupplierOptions,
+} from '../services/disbursementFormService'
+
+type OptionItem = {
+  label: string
+  value: string
+}
 
 function AddDisbursement() {
   const navigate = useNavigate()
   const { state } = useLocation() as { state?: { record?: Record<string, unknown> } }
   const initialValues = state?.record
   const isEditMode = Boolean(initialValues)
+  const [operationTypeOptions, setOperationTypeOptions] = useState<OptionItem[]>([])
+  const [supplierOptions, setSupplierOptions] = useState<OptionItem[]>([])
+  const [expenseTypeOptions, setExpenseTypeOptions] = useState<OptionItem[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      setLoadingOptions(true)
+      try {
+        const [operationTypes, suppliers, expenseTypes] = await Promise.all([
+          fetchOperationTypeOptions(),
+          fetchSupplierOptions(),
+          fetchExpenseTypeOptions(),
+        ])
+        setOperationTypeOptions(operationTypes)
+        setSupplierOptions(suppliers)
+        setExpenseTypeOptions(expenseTypes)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load form options.'
+        message.error(errorMessage)
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+
+    void loadOptions()
+  }, [])
 
   return (
     <div className="sheet-page w-full">
@@ -45,38 +83,127 @@ function AddDisbursement() {
               <Typography.Text className="form-section-title">Request Details</Typography.Text>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <Form.Item label="Date Processed" name="dateProcessed" rules={[{ required: true, message: 'Please select date processed' }]}>
+                <DatePicker className="w-full" />
+              </Form.Item>
               <Form.Item label="Request Date" name="requestDate" extra={<span className="form-help-text">Date when the disbursement was requested.</span>} rules={[{ required: true, message: 'Please select request date' }]}>
                 <DatePicker className="w-full" />
+              </Form.Item>
+              <Form.Item label="Applicable Month" name="applicableMonth" rules={[{ required: true, message: 'Please enter applicable month' }]}>
+                <Input placeholder="e.g. May 2026" />
               </Form.Item>
               <Form.Item label="Operation Type" name="operationType" rules={[{ required: true, message: 'Please select operation type' }]}>
                 <Select
                   placeholder="Select operation type"
-                  options={[
-                    { label: 'Vendor Payment', value: 'Vendor Payment' },
-                    { label: 'Reimbursement', value: 'Reimbursement' },
-                    { label: 'Purchase Request', value: 'Purchase Request' },
-                  ]}
+                  options={operationTypeOptions}
+                  loading={loadingOptions}
                 />
               </Form.Item>
-              <Form.Item label="Supplier" name="supplier" rules={[{ required: true, message: 'Please enter supplier' }]}>
-                <Input placeholder="Enter supplier name" />
+              <Form.Item
+                label="Particulars"
+                name="particulars"
+                className="md:col-span-2"
+                rules={[{ required: true, message: 'Please enter particulars' }]}
+              >
+                <Input.TextArea rows={3} placeholder="Enter particulars" />
+              </Form.Item>
+              <Form.Item label="Designation" name="designation" rules={[{ required: true, message: 'Please enter designation' }]}>
+                <Input placeholder="Enter designation" />
+              </Form.Item>
+              <Form.Item label="TIN Number" name="tinNumber" rules={[{ required: true, message: 'Please enter TIN number' }]}>
+                <Input placeholder="Enter TIN number" />
+              </Form.Item>
+              <Form.Item label="Supplier" name="supplier" rules={[{ required: true, message: 'Please select supplier' }]}>
+                <Select
+                  placeholder="Select supplier"
+                  options={supplierOptions}
+                  loading={loadingOptions}
+                  showSearch
+                  optionFilterProp="label"
+                />
               </Form.Item>
               <Form.Item label="Type of Expense" name="typeOfExpense" rules={[{ required: true, message: 'Please select type of expense' }]}>
                 <Select
                   placeholder="Select type of expense"
+                  options={expenseTypeOptions}
+                  loading={loadingOptions}
+                />
+              </Form.Item>
+              <Form.Item label="Source Document" name="sourceDocument" rules={[{ required: true, message: 'Please enter source document' }]}>
+                <Input placeholder="Enter source document" />
+              </Form.Item>
+              <Form.Item
+                label="Reference Number (Source Document)"
+                name="sourceDocumentReferenceNo"
+                rules={[{ required: true, message: 'Please enter source document reference number' }]}
+              >
+                <Input placeholder="Enter source document reference number" />
+              </Form.Item>
+              <Form.Item
+                label="Date (Source Document)"
+                name="sourceDocumentDate"
+                rules={[{ required: true, message: 'Please select source document date' }]}
+              >
+                <DatePicker className="w-full" />
+              </Form.Item>
+              <Form.Item
+                label="VAT / Non-VAT / VAT Exempt"
+                name="vatType"
+                rules={[{ required: true, message: 'Please select VAT type' }]}
+              >
+                <Select
+                  placeholder="Select VAT type"
                   options={[
-                    { label: 'Office Supplies', value: 'Office Supplies' },
-                    { label: 'Logistics', value: 'Logistics' },
-                    { label: 'Maintenance', value: 'Maintenance' },
-                    { label: 'Software Subscription', value: 'Software Subscription' },
+                    { label: 'VAT', value: 'VAT' },
+                    { label: 'Non-VAT', value: 'Non-VAT' },
+                    { label: 'VAT Exempt', value: 'VAT Exempt' },
                   ]}
                 />
               </Form.Item>
               <Form.Item label="Amount Requested" name="amountRequested" rules={[{ required: true, message: 'Please enter amount' }]}>
                 <InputNumber className="w-full" min={0} precision={2} placeholder="0.00" />
               </Form.Item>
-              <Form.Item label="Reference No." name="referenceNo" rules={[{ required: true, message: 'Please enter reference number' }]}>
+              <Form.Item label="Vat Amount (12%)" name="vatAmount" rules={[{ required: true, message: 'Please enter VAT amount' }]}>
+                <InputNumber className="w-full" min={0} precision={2} placeholder="0.00" />
+              </Form.Item>
+              <Form.Item label="Net Amount" name="netAmount" rules={[{ required: true, message: 'Please enter net amount' }]}>
+                <InputNumber className="w-full" min={0} precision={2} placeholder="0.00" />
+              </Form.Item>
+              <Form.Item label="Reference No." name="referenceNo" required={false}>
                 <Input placeholder="Enter reference number" />
+              </Form.Item>
+              <Form.Item label="GJ - Disbursement" name="gjDisbursement" required={false}>
+                <Input placeholder="Enter GJ - Disbursement" />
+              </Form.Item>
+              <Form.Item label="GJ - Liquidation" name="gjLiquidation" required={false}>
+                <Input placeholder="Enter GJ - Liquidation" />
+              </Form.Item>
+              <Form.Item label="AB Link - Request" name="abLinkRequest" required={false}>
+                <Input placeholder="Enter AB Link - Request" />
+              </Form.Item>
+              <Form.Item label="AB Link - Liquidation" name="abLinkLiquidation" required={false}>
+                <Input placeholder="Enter AB Link - Liquidation" />
+              </Form.Item>
+              <Form.Item label="Request Title" name="requestTitle" required={false}>
+                <Input placeholder="Enter request title" />
+              </Form.Item>
+              <Form.Item
+                label="Request Status"
+                name="requestStatus"
+                required={false}
+              >
+                <Select
+                  placeholder="Select request status"
+                  options={[
+                    { label: 'Processed', value: 'Processed' },
+                    { label: 'Pending', value: 'Pending' },
+                    { label: 'Paid', value: 'Paid' },
+                    { label: 'For Liquidation', value: 'For Liquidation' },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item label="Date Paid" name="datePaid">
+                <DatePicker className="w-full" />
               </Form.Item>
               <Form.Item label="Remarks" name="remarks" className="md:col-span-2">
                 <Input.TextArea rows={3} placeholder="Enter remarks" />

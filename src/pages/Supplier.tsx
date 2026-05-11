@@ -1,85 +1,11 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EditOutlined, EyeOutlined, FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Select, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EntityViewModal from '../components/EntityViewModal'
-
-type SupplierStatus = 'Active' | 'Pending' | 'Inactive'
-
-type SupplierItem = {
-  key: string
-  supplierCode: string
-  supplierName: string
-  contactPerson: string
-  category: string
-  email: string
-  phone: string
-  status: SupplierStatus
-}
-
-const suppliers: SupplierItem[] = [
-  {
-    key: '1',
-    supplierCode: 'SUP-001',
-    supplierName: 'Northline Office Supply',
-    contactPerson: 'Maria Santos',
-    category: 'Office Supplies',
-    email: 'maria@northline.example',
-    phone: '(213) 555-0182',
-    status: 'Active',
-  },
-  {
-    key: '2',
-    supplierCode: 'SUP-002',
-    supplierName: 'Brightway Logistics',
-    contactPerson: 'James Cooper',
-    category: 'Logistics',
-    email: 'james@brightway.example',
-    phone: '(415) 555-0148',
-    status: 'Active',
-  },
-  {
-    key: '3',
-    supplierCode: 'SUP-003',
-    supplierName: 'Metro Maintenance Group',
-    contactPerson: 'Lena Cruz',
-    category: 'Maintenance',
-    email: 'lena@metromaintenance.example',
-    phone: '(646) 555-0175',
-    status: 'Pending',
-  },
-  {
-    key: '4',
-    supplierCode: 'SUP-004',
-    supplierName: 'Summit IT Services',
-    contactPerson: 'Andre Wilson',
-    category: 'Technology',
-    email: 'andre@summitit.example',
-    phone: '(312) 555-0199',
-    status: 'Active',
-  },
-  {
-    key: '5',
-    supplierCode: 'SUP-005',
-    supplierName: 'Freshfield Catering',
-    contactPerson: 'Nina Park',
-    category: 'Food Services',
-    email: 'nina@freshfield.example',
-    phone: '(702) 555-0134',
-    status: 'Inactive',
-  },
-  {
-    key: '6',
-    supplierCode: 'SUP-006',
-    supplierName: 'Harbor Safety Equipment',
-    contactPerson: 'Evan Brooks',
-    category: 'Safety',
-    email: 'evan@harborsafety.example',
-    phone: '(503) 555-0121',
-    status: 'Pending',
-  },
-]
+import { exportTableToPdf } from '../services/pdfExportService'
+import { fetchSuppliers, type SupplierItem, type SupplierStatus } from '../services/suppliersService'
 
 const statusColors: Record<SupplierStatus, string> = {
   Active: 'green',
@@ -88,11 +14,30 @@ const statusColors: Record<SupplierStatus, string> = {
 }
 
 function Supplier() {
+  const [suppliers, setSuppliers] = useState<SupplierItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<SupplierStatus | 'All'>('All')
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierItem | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const loadSuppliers = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchSuppliers()
+        setSuppliers(data)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load suppliers.'
+        message.error(errorMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadSuppliers()
+  }, [])
 
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter((supplier) => {
@@ -111,7 +56,7 @@ function Supplier() {
 
       return matchesSearch && matchesStatus
     })
-  }, [search, status])
+  }, [suppliers, search, status])
 
   const columns: ColumnsType<SupplierItem> = [
     { title: 'Code', dataIndex: 'supplierCode', key: 'supplierCode', width: 105 },
@@ -149,15 +94,27 @@ function Supplier() {
           <Tooltip title="Edit">
             <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/supplier/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
-          <Popconfirm title="Delete supplier?" okText="Delete" cancelText="Cancel">
-            <Tooltip title="Delete">
-              <Button danger type="text" size="small" icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
         </Space>
       ),
     },
   ]
+
+  const handleExportPdf = () => {
+    exportTableToPdf({
+      filename: 'supplier-report.pdf',
+      title: 'Supplier Report',
+      columns: [
+        { key: 'supplierCode', title: 'Code' },
+        { key: 'supplierName', title: 'Supplier Name' },
+        { key: 'contactPerson', title: 'Contact' },
+        { key: 'category', title: 'Category' },
+        { key: 'email', title: 'Email' },
+        { key: 'phone', title: 'Phone' },
+        { key: 'status', title: 'Status' },
+      ],
+      rows: filteredSuppliers,
+    })
+  }
 
   return (
     <div className="sheet-page space-y-5">
@@ -171,6 +128,9 @@ function Supplier() {
           </Typography.Title>
         </div>
         <div className="flex items-center gap-3">
+          <Button danger icon={<FilePdfOutlined />} onClick={handleExportPdf} className="!rounded-md">
+            Export PDF
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -212,6 +172,7 @@ function Supplier() {
           className="grid-table"
           columns={columns}
           dataSource={filteredSuppliers}
+          loading={loading}
           pagination={{ pageSize: 8, showSizeChanger: false }}
           rowKey="key"
           bordered
@@ -232,7 +193,15 @@ function Supplier() {
           { key: 'category', label: 'Category' },
           { key: 'email', label: 'Email' },
           { key: 'phone', label: 'Phone' },
-          { key: 'status', label: 'Status' },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => (
+              <Tag color={value === 'Active' ? 'green' : value === 'Pending' ? 'gold' : 'default'}>
+                {String(value)}
+              </Tag>
+            ),
+          },
         ]}
       />
     </div>

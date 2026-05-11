@@ -1,41 +1,46 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EditOutlined, EyeOutlined, FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EntityViewModal from '../components/EntityViewModal'
-
-type UserItem = {
-  key: string
-  name: string
-  email: string
-  role: string
-  status: 'Active' | 'Inactive'
-}
-
-const users: UserItem[] = [
-  { key: '1', name: 'Alice Johnson', email: 'alice@company.com', role: 'Admin', status: 'Active' },
-  { key: '2', name: 'Mark Davis', email: 'mark@company.com', role: 'Manager', status: 'Active' },
-  { key: '3', name: 'Emma Cruz', email: 'emma@company.com', role: 'Analyst', status: 'Inactive' },
-]
-
-const statusColors: Record<UserItem['status'], string> = {
-  Active: 'green',
-  Inactive: 'default',
-}
+import { exportTableToPdf } from '../services/pdfExportService'
+import { fetchUsers, type UserItem } from '../services/usersService'
 
 function Users() {
+  const [users, setUsers] = useState<UserItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchUsers()
+        setUsers(data)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load users.'
+        message.error(errorMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadUsers()
+  }, [])
+
   const data = useMemo(
     () =>
       users.filter((item) =>
-        [item.name, item.email, item.role, item.status].join(' ').toLowerCase().includes(search.toLowerCase()),
+        [item.name, item.email, item.role, item.status, item.firstName, item.middleName, item.lastName]
+          .join(' ')
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       ),
-    [search],
+    [users, search],
   )
 
   const columns: ColumnsType<UserItem> = [
@@ -46,7 +51,9 @@ function Users() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (value: UserItem['status']) => <Tag color={statusColors[value]}>{value}</Tag>,
+      render: (value: UserItem['status']) => (
+        <Tag color={value === 'Active' ? 'green' : 'default'}>{value}</Tag>
+      ),
     },
     {
       title: 'Actions',
@@ -69,15 +76,24 @@ function Users() {
           <Tooltip title="Edit">
             <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/users/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
-          <Popconfirm title="Delete user?" okText="Delete" cancelText="Cancel">
-            <Tooltip title="Delete">
-              <Button danger type="text" size="small" icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
         </Space>
       ),
     },
   ]
+
+  const handleExportPdf = () => {
+    exportTableToPdf({
+      filename: 'users-report.pdf',
+      title: 'Users Report',
+      columns: [
+        { key: 'name', title: 'Name' },
+        { key: 'email', title: 'Email' },
+        { key: 'role', title: 'Role' },
+        { key: 'status', title: 'Status' },
+      ],
+      rows: data,
+    })
+  }
 
   return (
     <div className="sheet-page space-y-5">
@@ -91,6 +107,9 @@ function Users() {
           </Typography.Title>
         </div>
         <div className="flex items-center gap-3">
+          <Button danger icon={<FilePdfOutlined />} onClick={handleExportPdf} className="!rounded-md">
+            Export PDF
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -121,6 +140,7 @@ function Users() {
           className="grid-table"
           columns={columns}
           dataSource={data}
+          loading={loading}
           pagination={{ pageSize: 8, showSizeChanger: false }}
           rowKey="key"
           bordered
@@ -135,9 +155,16 @@ function Users() {
         onClose={() => setViewOpen(false)}
         fields={[
           { key: 'name', label: 'Name' },
+          { key: 'firstName', label: 'First Name' },
+          { key: 'middleName', label: 'Middle Name' },
+          { key: 'lastName', label: 'Last Name' },
           { key: 'email', label: 'Email' },
           { key: 'role', label: 'Role' },
-          { key: 'status', label: 'Status' },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => <Tag color={value === 'Active' ? 'green' : 'default'}>{String(value)}</Tag>,
+          },
         ]}
       />
     </div>
@@ -145,4 +172,3 @@ function Users() {
 }
 
 export default Users
-

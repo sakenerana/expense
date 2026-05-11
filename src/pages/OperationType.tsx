@@ -1,69 +1,15 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd'
+import { EditOutlined, EyeOutlined, FilePdfOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, Select, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EntityViewModal from '../components/EntityViewModal'
-
-type OperationStatus = 'Active' | 'Inactive'
-
-type OperationTypeItem = {
-  key: string
-  code: string
-  name: string
-  description: string
-  owner: string
-  status: OperationStatus
-  updatedAt: string
-}
-
-const operationTypes: OperationTypeItem[] = [
-  {
-    key: '1',
-    code: 'OPS-001',
-    name: 'Purchase Request',
-    description: 'Request for goods or services before procurement.',
-    owner: 'Procurement',
-    status: 'Active',
-    updatedAt: '2026-04-12',
-  },
-  {
-    key: '2',
-    code: 'OPS-002',
-    name: 'Reimbursement',
-    description: 'Employee reimbursement for approved expenses.',
-    owner: 'Finance',
-    status: 'Active',
-    updatedAt: '2026-04-18',
-  },
-  {
-    key: '3',
-    code: 'OPS-003',
-    name: 'Vendor Payment',
-    description: 'Payment processing for supplier invoices.',
-    owner: 'Accounts Payable',
-    status: 'Active',
-    updatedAt: '2026-04-25',
-  },
-  {
-    key: '4',
-    code: 'OPS-004',
-    name: 'Cash Advance',
-    description: 'Advance funds issued before business activity.',
-    owner: 'Treasury',
-    status: 'Inactive',
-    updatedAt: '2026-03-29',
-  },
-  {
-    key: '5',
-    code: 'OPS-005',
-    name: 'Budget Transfer',
-    description: 'Transfer available budget between cost centers.',
-    owner: 'Budget Control',
-    status: 'Active',
-    updatedAt: '2026-05-01',
-  },
-]
+import { exportTableToPdf } from '../services/pdfExportService'
+import {
+  fetchOperationTypes,
+  type OperationStatus,
+  type OperationTypeItem,
+} from '../services/operationTypesService'
 
 const statusColors: Record<OperationStatus, string> = {
   Active: 'green',
@@ -71,15 +17,34 @@ const statusColors: Record<OperationStatus, string> = {
 }
 
 function OperationType() {
+  const [operationTypes, setOperationTypes] = useState<OperationTypeItem[]>([])
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<OperationStatus | 'All'>('All')
   const [selectedOperationType, setSelectedOperationType] = useState<OperationTypeItem | null>(null)
   const [viewOpen, setViewOpen] = useState(false)
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const loadOperationTypes = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchOperationTypes()
+        setOperationTypes(data)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load operation types.'
+        message.error(errorMessage)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadOperationTypes()
+  }, [])
+
   const filteredData = useMemo(() => {
     return operationTypes.filter((item) => {
-      const searchableText = [item.code, item.name, item.description, item.owner]
+      const searchableText = [item.code, item.name, item.description]
         .join(' ')
         .toLowerCase()
 
@@ -88,13 +53,12 @@ function OperationType() {
 
       return matchesSearch && matchesStatus
     })
-  }, [search, status])
+  }, [operationTypes, search, status])
 
   const columns: ColumnsType<OperationTypeItem> = [
     { title: 'Code', dataIndex: 'code', key: 'code', width: 105 },
     { title: 'Operation Type', dataIndex: 'name', key: 'name', ellipsis: true, width: 175 },
     { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
-    { title: 'Owner', dataIndex: 'owner', key: 'owner', ellipsis: true, width: 145 },
     {
       title: 'Status',
       dataIndex: 'status',
@@ -102,7 +66,6 @@ function OperationType() {
       width: 95,
       render: (value: OperationStatus) => <Tag color={statusColors[value]}>{value}</Tag>,
     },
-    { title: 'Updated', dataIndex: 'updatedAt', key: 'updatedAt', width: 115 },
     {
       title: 'Actions',
       key: 'actions',
@@ -125,15 +88,24 @@ function OperationType() {
           <Tooltip title="Edit">
             <Button className='text-orange-700' type="text" size="small" icon={<EditOutlined />} onClick={() => navigate(`/operation-type/edit/${record.key}`, { state: { record } })} />
           </Tooltip>
-          <Popconfirm title="Delete operation type?" okText="Delete" cancelText="Cancel">
-            <Tooltip title="Delete">
-              <Button danger type="text" size="small" icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
         </Space>
       ),
     },
   ]
+
+  const handleExportPdf = () => {
+    exportTableToPdf({
+      filename: 'operation-type-report.pdf',
+      title: 'Operation Type Report',
+      columns: [
+        { key: 'code', title: 'Code' },
+        { key: 'name', title: 'Operation Type' },
+        { key: 'description', title: 'Description' },
+        { key: 'status', title: 'Status' },
+      ],
+      rows: filteredData,
+    })
+  }
 
   return (
     <div className="sheet-page space-y-5">
@@ -147,6 +119,9 @@ function OperationType() {
           </Typography.Title>
         </div>
         <div className="flex items-center gap-3">
+          <Button danger icon={<FilePdfOutlined />} onClick={handleExportPdf} className="!rounded-md">
+            Export PDF
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -187,6 +162,7 @@ function OperationType() {
           className="grid-table"
           columns={columns}
           dataSource={filteredData}
+          loading={loading}
           pagination={{ pageSize: 8, showSizeChanger: false }}
           rowKey="key"
           bordered
@@ -204,9 +180,11 @@ function OperationType() {
           { key: 'code', label: 'Code' },
           { key: 'name', label: 'Operation Type' },
           { key: 'description', label: 'Description' },
-          { key: 'owner', label: 'Owner' },
-          { key: 'status', label: 'Status' },
-          { key: 'updatedAt', label: 'Updated' },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => <Tag color={value === 'Active' ? 'green' : 'default'}>{String(value)}</Tag>,
+          },
         ]}
       />
     </div>
