@@ -20,6 +20,7 @@ type EntityViewModalProps<T extends Record<string, unknown>> = {
   title: string
   record: T | null
   fields: ViewField<T>[]
+  columns?: 1 | 2
   onClose: () => void
 }
 
@@ -39,6 +40,7 @@ function EntityViewModal<T extends Record<string, unknown>>({
   title,
   record,
   fields,
+  columns = 1,
   onClose,
 }: EntityViewModalProps<T>) {
   return (
@@ -49,16 +51,18 @@ function EntityViewModal<T extends Record<string, unknown>>({
       onOk={onClose}
       okText="Close"
       cancelButtonProps={{ style: { display: 'none' } }}
-      width={760}
+      width={columns === 2 ? 980 : 760}
       className="entity-view-modal"
     >
       {record ? (
         <>
-          <div className="entity-view-sheet-head">
-            <span>Field</span>
-            <span>Value</span>
-          </div>
-          <Descriptions bordered size="middle" column={1} className="entity-view-descriptions">
+          {columns === 1 && (
+            <div className="entity-view-sheet-head">
+              <span>Field</span>
+              <span>Value</span>
+            </div>
+          )}
+          <Descriptions bordered size="middle" column={columns} className="entity-view-descriptions">
             {fields.map((field) => {
               const value = record[field.key]
               const content = field.render

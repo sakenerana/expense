@@ -1,40 +1,72 @@
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Typography, message } from 'antd'
+import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  fetchExpenseTypeOptions,
-  fetchOperationTypeOptions,
-  fetchSupplierOptions,
-} from '../services/disbursementFormService'
+  createDisbursement,
+  fetchDisbursementFormLookups,
+  type DisbursementItem,
+  updateDisbursement,
+} from '../services/disbursementsService'
 
 type OptionItem = {
   label: string
-  value: string
+  value: number
+}
+
+type DisbursementFormValues = {
+  dateProcessed?: Dayjs
+  requestDate?: Dayjs
+  applicableMonth?: Dayjs
+  operationTypeId?: number
+  particulars?: string
+  designation?: string
+  tinNumber?: string
+  supplierId?: number
+  expenseTypeId?: number
+  sourceDocument?: string
+  sourceDocumentReferenceNo?: string
+  sourceDocumentDate?: Dayjs
+  vatType?: string
+  amountRequested?: number
+  vatAmount?: number
+  netAmount?: number
+  referenceNo?: string
+  gjDisbursement?: string
+  gjLiquidation?: string
+  abLinkRequest?: string
+  abLinkLiquidation?: string
+  requestTitle?: string
+  requestStatus?: string
+  datePaid?: Dayjs
+  remarks?: string
+}
+
+function formatDayjsToDate(value?: Dayjs) {
+  return value ? value.format('YYYY-MM-DD') : null
 }
 
 function AddDisbursement() {
   const navigate = useNavigate()
-  const { state } = useLocation() as { state?: { record?: Record<string, unknown> } }
+  const { state } = useLocation() as { state?: { record?: DisbursementItem } }
   const initialValues = state?.record
   const isEditMode = Boolean(initialValues)
+  const [form] = Form.useForm<DisbursementFormValues>()
   const [operationTypeOptions, setOperationTypeOptions] = useState<OptionItem[]>([])
   const [supplierOptions, setSupplierOptions] = useState<OptionItem[]>([])
   const [expenseTypeOptions, setExpenseTypeOptions] = useState<OptionItem[]>([])
   const [loadingOptions, setLoadingOptions] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const loadOptions = async () => {
       setLoadingOptions(true)
       try {
-        const [operationTypes, suppliers, expenseTypes] = await Promise.all([
-          fetchOperationTypeOptions(),
-          fetchSupplierOptions(),
-          fetchExpenseTypeOptions(),
-        ])
-        setOperationTypeOptions(operationTypes)
-        setSupplierOptions(suppliers)
-        setExpenseTypeOptions(expenseTypes)
+        const { operationTypes, suppliers, expenseTypes } = await fetchDisbursementFormLookups()
+        setOperationTypeOptions(operationTypes.map((item) => ({ label: item.label, value: item.id })))
+        setSupplierOptions(suppliers.map((item) => ({ label: item.label, value: item.id })))
+        setExpenseTypeOptions(expenseTypes.map((item) => ({ label: item.label, value: item.id })))
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to load form options.'
         message.error(errorMessage)
@@ -45,6 +77,40 @@ function AddDisbursement() {
 
     void loadOptions()
   }, [])
+
+  useEffect(() => {
+    if (!initialValues) {
+      return
+    }
+
+    form.setFieldsValue({
+      dateProcessed: initialValues.dateProcessed !== '-' ? dayjs(initialValues.dateProcessed) : undefined,
+      requestDate: initialValues.requestDate !== '-' ? dayjs(initialValues.requestDate) : undefined,
+      applicableMonth: initialValues.applicableMonth !== '-' ? dayjs(initialValues.applicableMonth) : undefined,
+      operationTypeId: initialValues.operationTypeId ?? undefined,
+      particulars: initialValues.particulars !== '-' ? initialValues.particulars : undefined,
+      designation: initialValues.designation !== '-' ? initialValues.designation : undefined,
+      tinNumber: initialValues.tinNumber !== '-' ? initialValues.tinNumber : undefined,
+      supplierId: initialValues.supplierId ?? undefined,
+      expenseTypeId: initialValues.expenseTypeId ?? undefined,
+      sourceDocument: initialValues.sourceDocument !== '-' ? initialValues.sourceDocument : undefined,
+      sourceDocumentReferenceNo: initialValues.referenceNo !== '-' ? initialValues.referenceNo : undefined,
+      sourceDocumentDate: initialValues.date !== '-' ? dayjs(initialValues.date) : undefined,
+      vatType: initialValues.vatType !== '-' ? initialValues.vatType : undefined,
+      amountRequested: initialValues.amountRequested,
+      vatAmount: initialValues.vatAmount,
+      netAmount: initialValues.netAmount,
+      referenceNo: initialValues.referenceNumber !== '-' ? initialValues.referenceNumber : undefined,
+      gjDisbursement: initialValues.gjDisbursement !== '-' ? initialValues.gjDisbursement : undefined,
+      gjLiquidation: initialValues.gjLiquidation !== '-' ? initialValues.gjLiquidation : undefined,
+      abLinkRequest: initialValues.abLinkRequest !== '-' ? initialValues.abLinkRequest : undefined,
+      abLinkLiquidation: initialValues.abLinkLiquidation !== '-' ? initialValues.abLinkLiquidation : undefined,
+      requestTitle: initialValues.requestTitle !== '-' ? initialValues.requestTitle : undefined,
+      requestStatus: initialValues.requestStatus,
+      datePaid: initialValues.datePaid !== '-' ? dayjs(initialValues.datePaid) : undefined,
+      remarks: initialValues.remarks !== '-' ? initialValues.remarks : undefined,
+    })
+  }, [form, initialValues])
 
   return (
     <div className="sheet-page w-full">
@@ -74,10 +140,56 @@ function AddDisbursement() {
           </Typography.Paragraph>
 
           <Form
+            form={form}
             layout="vertical"
             className="add-user-form checkout-form"
             requiredMark={true}
-            initialValues={initialValues}
+            onFinish={async (values: DisbursementFormValues) => {
+              const payload = {
+                dateProcessed: formatDayjsToDate(values.dateProcessed),
+                requestDate: formatDayjsToDate(values.requestDate),
+                applicableMonth: formatDayjsToDate(values.applicableMonth),
+                operationTypeId: values.operationTypeId ?? null,
+                particulars: values.particulars ?? null,
+                designation: values.designation ?? null,
+                tinNumber: values.tinNumber ?? null,
+                supplierId: values.supplierId ?? null,
+                expenseTypeId: values.expenseTypeId ?? null,
+                sourceDocument: values.sourceDocument ?? null,
+                sourceDocumentReferenceNo: values.sourceDocumentReferenceNo ?? null,
+                sourceDocumentDate: formatDayjsToDate(values.sourceDocumentDate),
+                vatType: values.vatType ?? null,
+                amountRequested: values.amountRequested ?? null,
+                vatAmount: values.vatAmount ?? null,
+                netAmount: values.netAmount ?? null,
+                referenceNo: values.referenceNo ?? null,
+                gjDisbursement: values.gjDisbursement ?? null,
+                gjLiquidation: values.gjLiquidation ?? null,
+                abLinkRequest: values.abLinkRequest ?? null,
+                abLinkLiquidation: values.abLinkLiquidation ?? null,
+                requestTitle: values.requestTitle ?? null,
+                requestStatus: values.requestStatus ?? null,
+                datePaid: formatDayjsToDate(values.datePaid),
+                remarks: values.remarks ?? null,
+              }
+
+              setSubmitting(true)
+              try {
+                if (isEditMode && initialValues) {
+                  await updateDisbursement({ id: initialValues.id, ...payload })
+                  message.success('Disbursement updated successfully.')
+                } else {
+                  await createDisbursement(payload)
+                  message.success('Disbursement created successfully.')
+                }
+                navigate('/disbursement')
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Failed to save disbursement.'
+                message.error(errorMessage)
+              } finally {
+                setSubmitting(false)
+              }
+            }}
           >
             <div className="form-section-head">
               <Typography.Text className="form-section-title">Request Details</Typography.Text>
@@ -89,10 +201,10 @@ function AddDisbursement() {
               <Form.Item label="Request Date" name="requestDate" extra={<span className="form-help-text">Date when the disbursement was requested.</span>} rules={[{ required: true, message: 'Please select request date' }]}>
                 <DatePicker className="w-full" />
               </Form.Item>
-              <Form.Item label="Applicable Month" name="applicableMonth" rules={[{ required: true, message: 'Please enter applicable month' }]}>
-                <Input placeholder="e.g. May 2026" />
+              <Form.Item label="Applicable Month" name="applicableMonth" rules={[{ required: true, message: 'Please select applicable month' }]}>
+                <DatePicker className="w-full" picker="month" />
               </Form.Item>
-              <Form.Item label="Operation Type" name="operationType" rules={[{ required: true, message: 'Please select operation type' }]}>
+              <Form.Item label="Operation Type" name="operationTypeId" rules={[{ required: true, message: 'Please select operation type' }]}>
                 <Select
                   placeholder="Select operation type"
                   options={operationTypeOptions}
@@ -113,7 +225,7 @@ function AddDisbursement() {
               <Form.Item label="TIN Number" name="tinNumber" rules={[{ required: true, message: 'Please enter TIN number' }]}>
                 <Input placeholder="Enter TIN number" />
               </Form.Item>
-              <Form.Item label="Supplier" name="supplier" rules={[{ required: true, message: 'Please select supplier' }]}>
+              <Form.Item label="Supplier" name="supplierId" rules={[{ required: true, message: 'Please select supplier' }]}>
                 <Select
                   placeholder="Select supplier"
                   options={supplierOptions}
@@ -122,7 +234,7 @@ function AddDisbursement() {
                   optionFilterProp="label"
                 />
               </Form.Item>
-              <Form.Item label="Type of Expense" name="typeOfExpense" rules={[{ required: true, message: 'Please select type of expense' }]}>
+              <Form.Item label="Type of Expense" name="expenseTypeId" rules={[{ required: true, message: 'Please select type of expense' }]}>
                 <Select
                   placeholder="Select type of expense"
                   options={expenseTypeOptions}
@@ -212,7 +324,7 @@ function AddDisbursement() {
 
             <div className="mt-4 border-t border-[#d8e4df] pt-4">
               <Space className="flex justify-end">
-                <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={submitting || loadingOptions}>
                   {isEditMode ? 'Update Changes' : 'Save Disbursement'}
                 </Button>
                 <Button onClick={() => navigate('/disbursement')}>Cancel</Button>

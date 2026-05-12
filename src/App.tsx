@@ -114,7 +114,7 @@ function App() {
         <Route path="/disbursement" element={<Disbursement />} />
         <Route path="/disbursement/new" element={<AddDisbursement />} />
         <Route path="/disbursement/edit/:id" element={<AddDisbursement />} />
-        <Route path="/settings" element={<ProtectedRoute allowedRoles={['Admin']}><Settings /></ProtectedRoute>} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
